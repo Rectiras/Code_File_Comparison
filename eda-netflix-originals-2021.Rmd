@@ -1,0 +1,123 @@
+---
+title: "Netflix Originals 2021 EDA"
+author: "Trixie"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r,message=FALSE,warning=FALSE}
+#Libraries needed
+library(dplyr)
+library(ggplot2)
+library(RColorBrewer)
+library(tidyr)
+
+#Load in our dataset 
+netflix<-read.csv("../input/netflix-original-films-imdb-scores/NetflixOriginals.csv")
+```
+
+```{r}
+#ok now lets check out all the genre
+gen <-netflix%>%select(Genre)%>%group_by(Genre)%>%mutate(count=n())
+gen <-distinct(gen)
+
+gen%>%filter(count>25)%>%ggplot(aes(count,Genre,fill=Genre))+geom_col()+scale_fill_brewer(palette = "Set2")+ggtitle("Top Netflix Genre")+geom_text(aes(label=count),position=position_stack(vjust=0.5),color="black",size=3)+theme_classic()
+
+#so from the plot, we can see that Netflix releases more Documentary than the other genres. 
+```
+
+
+```{r}
+#i already know this one but let's check the language anyway 
+lang <-netflix%>%select(Language)%>%group_by(Language)%>%mutate(count=n())
+lang <-distinct(lang)
+
+lang%>%head(10)%>%ggplot(aes(x=reorder(Language,-count),y=count,fill=Language))+geom_col()+scale_fill_brewer(palette = "Set3")+ggtitle("Top Language for Netflix Originals")+geom_text(aes(label=count),position=position_stack(vjust=0.5),color="black",size=3)+theme_classic()
+
+#Obviously the first language is English. And it is intersting to see that the 2nd and 3rd are : Hindi & Spanish
+```
+
+```{r}
+#mean_rating 
+mean(netflix$IMDB.Score)
+
+#the mean rating for all the originals movie is 6.2
+```
+
+```{r}
+#ok let's begin rating.Which original movie has the highest rating on imdb
+netflix%>%arrange(desc(IMDB.Score))%>%head(20)
+netflix%>%arrange(desc(IMDB.Score))%>%head(20)%>%ggplot(aes(x=reorder(Title,IMDB.Score),y=IMDB.Score,fill=Genre))+geom_col()+coord_flip()+theme_classic()+ggtitle("Top 20 Netflix Originals ")+scale_fill_brewer(palette="Pastel1")
+
+#let's remove Documentary and do the same exercise
+netflix%>%filter(Genre!="Documentary")%>%arrange(desc(IMDB.Score))%>%head(20)
+netflix%>%filter(Genre!="Documentary")%>%arrange(desc(IMDB.Score))%>%head(20)%>%ggplot(aes(x=reorder(Title,IMDB.Score),y=IMDB.Score,fill=Genre))+geom_col()+coord_flip()+theme_classic()+ggtitle("Top 20 Netflix Originals (non Documentary) ")+scale_fill_brewer(palette="Paired")
+
+#The highest rated original movie is : David Ottorbough - a life on our planet, rated 9 on IMDB (Genre = Documentary) 
+#If we remove documentary from genre, the highest rated movie is : Springsteen on Brodway, rated 8.5 on IMDB
+
+#I am curious about the rating distribution, so let's see the rating distribution for all the dataset
+netflix%>%ggplot(aes(IMDB.Score))+geom_histogram(binwidth=0.1,fill="grey")+ggtitle("IMDB Distribution for Netflix Originals")+theme_classic()
+
+#lets find out the movie with rating <4
+netflix%>%filter(IMDB.Score <=4)%>%select(Title,Genre,IMDB.Score,Runtime,Language)
+
+#lets find out the movie with rating <8
+netflix%>%filter(IMDB.Score >=8)%>%select(Title,Genre,IMDB.Score,Runtime,Language)
+
+#Now i just want to find out the rating for these 5 Top Genre
+genre <- c("Documentary","Drama","Comedy","Romantic comedy","Thriller")
+netflix%>%filter(Genre%in%genre)%>%ggplot(aes(Genre,IMDB.Score,color=Genre))+geom_boxplot()+theme_classic()+ggtitle("Rating for top 5 Genres")+scale_color_brewer(palette="Paired")
+
+#Documentary has the highest median vs. the rest so it is a good choice if you wish to watch something good on Netflix. 
+#If this is not your favorite genre, perhaps go for Drama as the next option 
+```
+
+```{r}
+#average runtime
+mean(netflix$Runtime) 
+
+#around 93 mins
+```
+
+```{r}
+#now let's plot the runtime distribution
+netflix%>%ggplot(aes(Runtime))+geom_histogram(binwidth=2,fill="grey")+ggtitle("Runtime Distribution for Netflix Originals")+theme_classic()
+
+
+#so there is show with runtime less than 25 mins & 1 show with runtime >200 mins 
+#let's pull it out 
+netflix%>%filter(Runtime<=25)%>%arrange(Runtime)
+netflix%>%filter(Runtime>200)%>%arrange(desc(Runtime))
+```
+
+```{r}
+#now let's check the title for those top genre : Documentary, Drama, Comedy, Romentic comedary, Thriller
+#just some movies to add to watch list on Netflix
+
+doc <- netflix%>%filter(Genre=="Documentary")%>%arrange(desc(IMDB.Score))%>%head(20)
+doc
+
+comedy <- netflix%>%filter(Genre=="Comedy")%>%arrange(desc(IMDB.Score))%>%head(20)
+comedy
+
+drama <- netflix%>%filter(Genre=="Drama")%>%arrange(desc(IMDB.Score))%>%head(20)
+drama
+
+romcom <- netflix%>%filter(Genre=="Romantic comedy")%>%arrange(desc(IMDB.Score))%>%head(20)
+romcom
+
+thriller <- netflix%>%filter(Genre=="Thriller")%>%arrange(desc(IMDB.Score))%>%head(20)
+thriller
+
+#Summary : 
+#Top 5 Genres on Netflix : Documentary, Drama, Comedy, Romantic Comedy and Thriller 
+#Top movie on Netflix : David Ottorbough - A Life on Our planet, rated 9. Lowest movie is : Enter the Anime rated 2.5. 
+#Top 3 languages : English, Hindi, Spanish 
+#The average rating for the movie is 6.2 - with highest genre is documentarty with median around 6.9
+#The average runtime is around 93 mins ~ the longest runtime is at 209 mins (The Irishman) & the shortest one is 4 mins (Sol Lavante)
+
+```
